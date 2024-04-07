@@ -14,7 +14,7 @@ def main():
     window = ttk.Window(title="Dilan's Diceware", themename="cyborg")
     # Vars
     v_lookup = ttk.StringVar(window)
-    v_txt_lookup = ttk.IntVar(window)
+    v_txt_lookup = ttk.StringVar(window)
     v_wordlist = []
     v_output = ttk.StringVar(window)
 
@@ -50,14 +50,13 @@ def main():
             conn, cur = create_conn()
             cur.execute(f"REPLACE INTO 'tablelist' (tablename) VALUES ('{v_tablename.get()}')")
             cur.execute(f"DROP TABLE IF EXISTS '{v_tablename.get()}'")
-            cur.execute(f"CREATE TABLE '{v_tablename.get()}' (seq INT PRIMARY KEY, word TEXT)")
+            cur.execute(f"CREATE TABLE '{v_tablename.get()}' (seq TEXT PRIMARY KEY, word TEXT)")
             conn.commit()
             f = open(v_filepath.get(), "r")
             for line in f.readlines():
                 line_split = line.split()
                 seq, word = line_split[0], line_split[1]
-                cur.execute(f"REPLACE INTO '{v_tablename.get()}' VALUES ({seq}, '{word}')")
-                print(f"For {seq}, inserted {word}")
+                cur.execute(f"REPLACE INTO '{v_tablename.get()}' VALUES ('{seq}', '{word}')")
             conn.commit()
             conn.execute("VACUUM")
             conn.commit()
@@ -102,7 +101,7 @@ def main():
 
     def cmd_lookup():
         conn, cur = create_conn()
-        cur.execute(f"SELECT word FROM '{cb_tablename.get()}' WHERE seq = {v_txt_lookup.get()}")
+        cur.execute(f"SELECT word FROM '{cb_tablename.get()}' WHERE seq = '{v_txt_lookup.get()}'")
         value = cur.fetchone()[0]
         conn.close()
         v_lookup.set(value)
@@ -129,7 +128,8 @@ def main():
             for i in range(1, v_nuofdice.get()+1):
                 frm_column = ttk.Frame(frm_diceroll)
                 frm_column.pack(side="left", padx=4, pady=4)
-                rnum = str(r.randint(1, 6))
+                sides = int(cb_sides.get())
+                rnum = str(r.randint(1, sides))
                 lbl_label = ttk.Label(frm_column, text=f"Dice #{i}:")
                 lbl_label.pack(side="top", padx=4, pady=4)
                 lbl_dice = ttk.Label(frm_column, text=rnum, font="16")
@@ -143,14 +143,25 @@ def main():
         frm_diceroll.pack(side="top", padx=4, pady=4)
 
         # Dice Controls
+
         lbl_nuofdice = ttk.Label(frm_dicecontrols, text="Number of Dice: ")
         lbl_nuofdice.grid(row=0, column=0, padx=4, pady=4)
 
         txt_nuofdice = ttk.Entry(frm_dicecontrols, width=3, textvariable=v_nuofdice)
         txt_nuofdice.grid(row=0, column=1, padx=4, pady=4)
 
+        cb_sides = ttk.Combobox(frm_dicecontrols, state="readonly", values=[6, 20], width=4)
+        cb_sides.grid(row=0, column=2, padx=4, pady=4)
+        cb_sides.set(6)
+
+        lbl_sides = ttk.Label(frm_dicecontrols, text="Sides")
+        lbl_sides.grid(row=0, column=3, padx=4, pady=4)
+
         btn_rolldice = ttk.Button(frm_dicecontrols, text="Roll Dice", command=cmd_rolldice)
-        btn_rolldice.grid(row=0, column=2, padx=4, pady=4)
+        btn_rolldice.grid(row=0, column=4, padx=4, pady=4)
+
+        # Set Defaults
+        v_nuofdice.set(5)
 
     def cmd_refresh_output():
         endstr = ""
